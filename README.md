@@ -305,3 +305,88 @@ $$
 
 尽管隐藏状态使RNN可以记住过去时间步长上的输入信息，但是它也引入了（可能很长）序列上的矩阵乘法。矩阵乘法中的小值会导致梯度在每个时间步减小，从而导致最终消失现象，而相反的大值会导致爆炸问题[112]。梯度的上升或消失实际上阻碍了RNN学习数据中长期顺序依存关系的能力[110]。
 
+为了克服这一障碍，提出了长短期记忆（LSTM）神经网络[113]以捕获序列学习中的长期依赖性。与RNN中的隐藏层相比，LSTM隐藏层具有额外的四个部分，分别是存储单元，输入门，忘记门和输出门。范围为[0,1]的这三个门可以控制信息流入存储单元，并保留先前时间步长中提取的特征。这些简单的更改使存储单元能够存储和读取尽可能多的长期信息。LSTM隐藏层的数学符号如下。
+$$
+\begin{aligned}
+i_{t} &=\boldsymbol{\sigma}\left(\left[\mathbf{H}_{t-1}, \mathbf{X}_{t}\right] \cdot W_{i}+b_{i}\right) \\
+o_{t} &=\boldsymbol{\sigma}\left(\left[\mathbf{H}_{t-1}, \mathbf{X}_{t}\right] \cdot W_{o}+b_{o}\right) \\
+f_{t} &=\boldsymbol{\sigma}\left(\left[\mathbf{H}_{t-1}, \mathbf{X}_{t}\right] \cdot W_{f}+b_{f}\right) \\
+\mathbf{C}_{t} &=f_{t} \odot \mathbf{C}_{t-1}+i_{t} \odot \tanh \left(\left[\mathbf{H}_{t-1}, \mathbf{X}_{t}\right] \cdot W_{c}+b_{c}\right) \\
+\mathbf{H}_{t} &=o_{t} \odot \tanh \left(\mathbf{C}_{t}\right)
+\end{aligned} \tag{9}
+$$
+其中，$i_t,o_t，f_t$分别输入门，输出门，忘记门。$C_t$是存储单元在时间$t$的值。
+
+### [GRU](#content)
+
+虽然LSTM是避免梯度消失或爆炸的可行选择，但其复杂的结构导致更多的内存需求和更长的训练时间。[114]提出了一种简单但功能强大的LSTM变体，即门控循环单元（GRU）。LSTM单元具有三个门，而GRU单元仅具有两个门，从而导致参数更少，从而缩短了训练时间。但是，GRU在经验上与LSTM一样有效[114]，并广泛用于各种任务。GRU隐藏层的数学符号如下。
+$$
+\begin{aligned}
+r_{t} &=\boldsymbol{\sigma}\left(\left[\mathbf{H}_{t-1}, \mathbf{X}_{t}\right] \cdot W_{r}+b_{r}\right) \\
+u_{t} &=\boldsymbol{\sigma}\left(\left[\mathbf{H}_{t-1}, \mathbf{X}_{t}\right] \cdot W_{u}+b_{u}\right) \\
+\tilde{\mathbf{H}}_{t} &=\boldsymbol{t a n h}\left(r_{t} \odot\left[\mathbf{H}_{t-1}, \mathbf{X}_{t}\right] \cdot W_{h}+b_{h}\right) \\
+\mathbf{H}_{t} &=u_{t} \odot \mathbf{H}_{t-1}+\left(1-u_{t}\right) \odot \tilde{\mathbf{H}}_{t}
+\end{aligned} \tag{10}
+$$
+其中$r_t$是复位门，$u_t$是更新门。
+
+### [RNNs in Traffic Domain](#content)
+
+RNN已显示出令人印象深刻的稳定性和处理时间序列数据的能力。由于交通数据具有明显的时间依赖性，因此通常利用RNN捕获交通数据中的时间相关性。在我们调查的工作中，只有[74]使用RNN捕获流量中的时间依赖性，而超过一半的研究采用了GRU，有些则采用了LSTM。这可以解释为RNN在严重的梯度消失或梯度爆炸中得以幸存，而LSTM和GRU成功地解决了这一问题，而GRU可以缩短训练时间。
+
+此外，还有许多技巧可以增强RNN的能力，以建模交通领域中的复杂时间动态，例如注意机制，门控机制，残差机制。
+
+例如，[74]将上下文信息（即包含相关区域信息的SGCN的输出）合并到注意力操作中，以建模不同时间戳下的观测值之间的相关性：$z=F_{\text {pool}}\left(\mathbf{X}_{t}, S G C N\left(\mathbf{X}_{t}\right)\right)$和$S=\sigma\left(W_{1} \operatorname{Re} L U\left(W_{2} z\right)\right), \mathbf{H}_{t}=RNN\left(\left[\mathbf{H}_{t-1}, \mathbf{X}_{t}\right] \odot S\right)$，其中$Fpool(·)$是全局平均池化层，$RNN(·)$表示RNN隐藏层。
+
+[91]通过将外部属性嵌入到输入中来考虑外部因素。此外，他们还通过残差链接将先前的隐藏状态添加到了下一个隐藏状态，他们认为这可以使GRU对交通历史观测值的突然变化更加敏感和健壮。新的隐藏状态公式如下：$\mathbf{H}_{t}=G R U\left(\left[\mathbf{H}_{t-1}, \mathbf{X}_{t}\right], \mathbf{E}_{t}\right)+\mathbf{H}_{t-1} W$，其中$E_t$是时间t的外部特征，$W$是线性可训练参数，$H_{t-1}W$是残差链接。
+
+[85]通过将扩张的跳层连接插入GRU，通过将隐藏状态从$\mathbf{H}_{t}=G R U\left(\left[\mathbf{H}_{t-1}, \mathbf{X}_{t}\right]\right)$更改为$\mathbf{H}_{t}=G R U\left(\mathbf{H}_{t-s}, \mathbf{X}_{t}\right)$，其中s表示每个的扩张长度或扩张率，$GRU(·)$表示GRU隐藏层。这种分层的扩展设计为不同层的循环单元带来了多个时间尺度，从而实现了多时间尺度建模。
+
+尽管有上述技巧，但有些工作用光谱图卷积（SGC）或扩散图卷积（DGC）代替了RNN隐藏层中的矩阵乘法，以共同捕获空间时域相关性。以GRU为例：
+$$
+\begin{aligned}
+r_{t} &=\boldsymbol{\sigma}\left(\left[\mathbf{H}_{t-1}, \mathbf{X}_{t}\right] *_{\mathcal{G}} W_{r}+b_{r}\right) \\
+u_{t} &=\boldsymbol{\sigma}\left(\left[\mathbf{H}_{t-1}, \mathbf{X}_{t}\right] *_{\mathcal{G}} W_{u}+b_{u}\right) \\
+\tilde{\mathbf{H}}_{t} &=\tanh \left(r_{t} \odot\left[\mathbf{H}_{t-1}, \mathbf{X}_{t}\right] *_{\mathcal{G}} W_{h}+b_{h}\right) \\
+\mathbf{H}_{t} &=u_{t} \odot \mathbf{H}_{t-1}+\left(1-u_{t}\right) \odot \tilde{\mathbf{H}}_{t}
+\end{aligned} \tag{11}
+$$
+G可以代表SGC，DGC或其他变体。在我们调查的文献中，大多数替换发生在GRU中，而只有一种发生在LSTM中[58]。在GRU相关交通工作中，[91]，[89]，[86]，[77]，[72]将矩阵乘法替换为DGC，[18]，[85]，[68]替换为SGC，[84]，[97]替换为GAT。
+
+请注意，除了RNN外，其他技术（例如，下一部分中的TCN）也是提取交通任务中时间动态的常用选择。
+
+## [TCN](#content)
+
+尽管基于RNN的模型在时间序列分析中变得很普遍，但用于流量预测的RNN仍然要耗费大量时间，复杂的门机制以及对动态变化的缓慢响应[74]。相反，一维神经网络具有训练快速，结构简单，对先前步骤没有依赖性的优势[115]。然而，实际上，一维CNN比RNN少见，这是因为它缺乏长序列的记忆[116]。2016年，[117]提出了一种新颖的将因果卷积和扩张卷积相结合的卷积运算，在文本转语音任务中胜过RNN。因果卷积的预测取决于先前的要素，而不取决于未来的要素。扩张卷积通过将其过滤为零来扩展原始过滤器的感受野[118]。[119]简化了[117]中因果关系的卷积，用于序列建模问题，并将其重命名为时间卷积网络（TCN）。近年来，越来越多的作品采用TCN来处理交通时序数据[74]，[62]，[82]，[93]。
+
+### [Sequence Modeling and 1-D TCN](#content)
+
+给定长度为P的输入序列表示为$\mathbf{x}=\left[\mathbf{x}_{1}, \cdots, \mathbf{x}_{\mathbf{P}}\right] \in \mathbb{R}^{\mathbf{P}}$，序列建模旨在生成具有相同长度的输出序列，表示为$\mathbf{y}=\left[\mathbf{y}_{1}, \cdots, \mathbf{y}_{\mathbf{P}}\right] \in \mathbb{R}^{\mathbf{P}}$。关键的假设是，当前时间$y_t$的输出仅与历史数据$[x1，\cdots ，xt]$相关，而与未来的任何输入$[x_{t+1}，\cdots ，xP]$不相关，即$yt = f(x1，\cdots ，xt)$，$f$是映射函数。
+
+显然，RNN，LSTM和GRU可以作为序列建模任务的解决方案。但是，TCN可以比RNN更有效地解决序列建模问题，因为它可以以非递归方式正确捕获长序列。TCN中膨胀的因果卷积公式如下：
+$$
+\mathbf{y}_{t}=\Theta *_{\mathcal{T}^{\mathrm{d}}} \mathbf{x}_{t}=\sum_{k=0}^{\mathbf{K}-1} w_{k} \mathbf{x}_{t-\mathrm{d} k} \tag{12}
+$$
+其中$* \tau^ \mathrm{d}$是膨胀因果算子，其中膨胀率$d$控制跳跃距离，$\Theta=\left[w_{0}, \cdots, w_{\mathbf{K}-\mathbf{1}}\right] \in \mathbb{R}^{\mathbf{K}}$是内核。零填充策略用于使输出长度与输入长度相同（如图8所示）。如果没有填充，输出长度将缩短$(K-1)d $[74]。
+
+![fig8](./img/fig8.png)
+
+图8. TCN中的多个膨胀因果卷积层：[x1，x2，x3]是输入序列，[y1，y2，y3]是具有相同长度的输出序列。内核的大小为2，层的膨胀率为[1、2、4]。采取零填充策略。
+
+为了增大感受野，TCN堆叠了多个膨胀的因果卷积层，其中$d = 2^l$作为第l层的膨胀率（如图8所示）。因此，网络中的接收域呈指数增长，而无需许多卷积层或较大的过滤器，从而可以用较少层处理较长序列并节省计算资源[82]。
+
+### [TCN in Traffic Domain](#content)
+
+与序列建模有关的交通工作很多，尤其是交通空间时空预测任务。与RNNs相比，非递归计算方式使TCN可以缓解梯度爆炸问题，并通过并行计算促进训练。因此，一些工作采用TCN来捕获交通数据中的时间依赖性。
+
+大多数基于图的交通数据都是3-D张量，表示为$X \in \mathbb{R}^{P×N×F_I}$，这需要将1-DTCN泛化为3-D变量。可以采用经扩大的因果卷积在时刻$t$生成节点$i$的第$j$个输出特征，如下所示[62]：
+$$
+\begin{aligned}
+\mathcal{Y}_{t, j}^{i} &=\rho\left(\Theta_{j} *_{\mathcal{T}^{\mathrm{d}}} \mathcal{X}_{t}^{i}\right) \\
+&=\boldsymbol{\rho}\left(\sum_{m=1}^{\mathrm{F}_{\mathrm{I}}} \sum_{k=0}^{\mathrm{K}-1} w_{j, m, k} \mathcal{X}_{t-\mathrm{d} k, m}^{i}\right), 1 \leq j \leq \mathrm{F}_{\mathrm{O}}
+\end{aligned} \tag{13}
+$$
+其中$\mathcal{Y}_{t, j}^{i} \in \mathbb{R}$是节点$i$在时间$t$的第$j$个输出特征。$\mathcal{X}_{t-\mathbf{d} k, m}^{i} \in \mathbb{R}$是节点$i$在时间$t-dk$的第$m$个输入特征。核$\Theta_{j} \in \mathbb{R}^{\mathbf{K} \times \mathbf{F}_{\mathbf{I}}}$是可训练的。$F_O$是输出特征的数量。
+
+将相同的卷积内核应用于流量网络上的所有节点，并且每个节点都会产生$F_O$新特征。$l$层的数学公式如下[62]，[93]
+
