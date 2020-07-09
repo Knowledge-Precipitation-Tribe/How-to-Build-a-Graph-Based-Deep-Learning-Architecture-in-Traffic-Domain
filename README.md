@@ -7,8 +7,8 @@ Paper：[How to Build a Graph-Based Deep Learning Architecture in Traffic Domain
 
 - <a href = "#Abstract">Abstract</a>
 - <a href = "#Introduction">Introduction</a>
-- <a href = "#Related-Work"></a>
-- <a href = "#Problems,-Research-Directions-and-Challenges"></a>
+- <a href = "#Related-Work">Related-Work</a>
+- <a href = "#Problems,-Research-Directions-and-Challenges">Problems,Research Directions and Challenges</a>
     - <a href = "#Traffic-Problems">Traffic Problems</a>
         - <a href = "#Traffic-Congestion">Traffic Congestion</a>
         - <a href = "#Travel-Demand">Travel Demand</a>
@@ -23,7 +23,7 @@ Paper：[How to Build a Graph-Based Deep Learning Architecture in Traffic Domain
         - <a href = "#Traffic-Incident Detection">Traffic Incident Detection</a>
         - <a href = "#Vehicle-Detection">Vehicle Detection</a>
     - <a href = "#Challenge">Challenge</a>
-- <a href = "#Problem-Formulation-and-Graph-Construction"><Problem Formulation and Graph Construction/a>
+- <a href = "#Problem-Formulation-and-Graph-Construction">Problem Formulation and Graph Construction</a>
     - <a href = "#Notations">Notations</a>
     - <a href = "#Graph-based-Spatial-Temporal-Forecasting">Graph-based Spatial Temporal Forecasting</a>
     - <a href = "#Graph-Construction-from-Traffic-Datasets">Graph Construction from Traffic Datasets</a>
@@ -61,7 +61,7 @@ Paper：[How to Build a Graph-Based Deep Learning Architecture in Traffic Domain
     - <a href = "#Temporal-Dependency">Temporal Dependency</a>
         - <a href = "#Multi-timescale">Multi-timescale</a>
         - <a href = "#Different-Weights">Different Weights</a>
-    - <a href = "#Spatiotemporal-Dependency"></a>
+    - <a href = "#Spatiotemporal-Dependency">Spatiotemporal Dependency</a>
     - <a href = "#External-Factors">External Factors</a>
 - <a href = "#Public-Datasets-and-Open-Source-Codes">Public Datasets and Open Source Codes</a>
     - <a href = "#Public-Datasets">Public Datasets</a>
