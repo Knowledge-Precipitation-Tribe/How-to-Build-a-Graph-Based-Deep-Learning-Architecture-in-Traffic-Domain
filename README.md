@@ -205,3 +205,31 @@ $$
 
 # Deep Learning Techniques Perspective
 
+我们总结了现有交通文献中的许多基于图的深度学习架构，发现它们大多数由图神经网络（GNN）和其他模块组成，例如递归神经网络（RNN），时间卷积网络（TCN），序列到序列（Seq2Seq）模型，生成对抗网络（GAN）（如表II所示）。正是GNN与其他深度学习技术的合作才能在许多交通场景中实现最先进的性能。本部分旨在介绍其在交通任务中的原理，优点，缺陷及其变体，以帮助参与者了解如何在交通领域中利用深度学习技术。
+
+![table2](./img/table2.png)
+
+## [GNNs](#content)
+
+在过去的两年中，受深度学习方法（例如CNN，RNN）的巨大成功的激励，人们越来越有兴趣将神经网络泛化为任意结构化的图，并且这种网络被归类为图神经网络。许多工作着重于扩展CNN用于图数据的卷积，并且图上的新型卷积已得到迅速发展。与交通任务相关的两个主流图卷积是无向图的谱图卷积（SGC）和有向图的扩散图卷积（DGC）。也有其他新颖的卷积[60]，但相关的流量工作相对较少。SGC和DGC都旨在通过特征聚合和非线性变换为图中的每个节点生成新的特征表示（如图6所示）。请注意，我们将SGC网络称为SGCN，将DGC网络称为DGCN。
+
+![fig6](./img/fig6.png)
+
+图6：图神经网络的一般结构由两层组成：1）聚合层：在每个特征维上，相邻节点的特征被聚合到中心节点。在数学上，聚合层的输出是邻接矩阵和特征矩阵的乘积。2）非线性变换层：随后，每个节点的所有聚合特征都被馈送到非线性变换层中以创建更高的特征表示。所有节点共享相同的转换内核。
+
+### [Spectral Graph Convolution](#content)
+
+在频谱理论中，图由其对应的归一化拉普拉斯矩阵$\mathbf{L}=\mathbf{I}_{\mathrm{N}}-\mathbf{D}^{-\frac{1}{2}} \mathbf{A} \mathbf{D}^{-\frac{1}{2}} \in \mathbb{R}^{\mathbf{N} \times \mathbf{N}}$表示。实对称矩阵$L$可以通过特征分解对角化，如$\mathbf{L}=\mathbf{U} \mathbf{\Lambda} \mathbf{U}^{T}$，其中$\mathbf{U} \in \mathbb{R}^{\mathbf{N} \times \mathbf{N}}$是特征向量矩阵，而$\boldsymbol{\Lambda} \in \mathbb{R}^{\mathbf{N} \times \mathbf{N}}$是对角特征值矩阵。由于$U$也是正交矩阵，[99]将其用作图傅立叶基础，将图信号$x \in \mathbb{R}^{\mathbf{N}}$的图傅里叶变换定义为$\hat{x}=\mathbf{U}^{T} x$，其逆取为$x=\mathbf{U} \hat{x}$。
+
+[100]尝试将CNN卷积的类似物建立到光谱域中，并将光谱卷积定义为$y=\Theta *_{\mathcal{G}} x=\mathbf{U} \Theta \mathbf{U}^{T} x$，将$x$转换为光谱域，通过对角核调整其振幅$\Theta=\operatorname{diag}\left(\theta_{0}, \ldots, \theta_{\mathbf{N}-1}\right) \in \mathbb{R}^{\mathbf{N} \times \mathbf{N}}$，并进行傅立叶逆变换以获得空间域中的最终结果$y$。尽管从理论上保证了这种卷积，但在计算上是昂贵的，因为与$U$的乘积为$O(N^2)$，而$L$的本征分解对于大规模图形是无法接受的。此外，它会使用$N$个参数以内核$\theta$考虑所有节点，因此无法提取空间定位。
+
+为避免这种局限性，[101]通过限制内核$\theta$为特征值矩阵$\boldsymbol{\Lambda}$的多项式来局限卷积并减少其参数，因为$\Theta=\sum_{k=0}^{K-1} \theta_{k} \Lambda^{k}$，而$K$从a确定卷积的最大半径中央节点。因此，可以将卷积改写为：$\Theta *_{\mathcal{G}} x=\sum_{k=0}^{K-1} \theta_{k} \mathbf{U} \mathbf{\Lambda}^{k} \mathbf{U}^{T} x=\sum_{k=0}^{\mathbf{K}-1} \theta_{k} \mathbf{L}^{k} x$。更进一步，[101]采用Chebyshev多项式$T_k(x)$逼近$L^k$，得到$\Theta *_{\mathcal{G}} x \approx \sum_{k=0}^{K-1} \theta_{k} T_{k}(\tilde{\mathbf{L}}) x$，重定比例为$\tilde{\mathbf{L}}=\frac{2}{\lambda_{\max }} \mathbf{L}-\mathbf{I}_{\mathbf{N}}$，$λ_{max}$是$L$的最大特征值，$T_{k}(x){=} 2 x T_{k-1}(x)-T_{k-2}(x), T_{0}(x)=1$,$T1(x) = x$ [102]。通过递归计算$Tk(x)$，可以将此K-localized卷积的复杂度降低为$\mathcal{O}(\mathbf{K}|\mathbf{E}|)$，其中$|\mathbf{E}|$是边的数量。
+
+基于[101]，[103]，通过限制$K = 2$简化了频谱图卷积，并且在$T_0(\tilde{\mathbf{L}})= 1$的情况下，$T_1(\tilde{\mathbf{L}})=\tilde{\mathbf{L}}$，他们得到$\Theta *_{\mathcal{G}} x \approx \theta_{0} T_{0}(\tilde{\mathbf{L}}) x+\theta_{1} T_{1}(\tilde{\mathbf{L}}) x=\theta_{0} x+\theta_{1} \tilde{\mathbf{L}} x$。注意到$\tilde{\mathbf{L}}=\frac{2}{\lambda_{\max }} \mathbf{L}-\mathbf{D}$，他们将$λ_{max}= 2$设置为$\Theta *_{\mathcal{G}} x \approx \theta_{0} x+\theta_{1}(\mathbf{L}-\mathbf{D}) x$。对于该$\mathbf{I}_{\mathrm{N}}-\mathbf{D}^{-\frac{1}{2}} \mathbf{A} \mathbf{D}^{-\frac{1}{2}}$ 和 $\mathbf{L}=\mathbf{L}-\mathbf{I}_{\mathrm{N}}=-\mathbf{D}^{-\frac{1}{2}} \mathbf{A} \mathbf{D}^{-\frac{1}{2}}$，它们得到$\Theta *_{\mathcal{G}} x \approx \theta_{0} x-\theta_{1}\left(\mathbf{D}^{-\frac{1}{2}} \mathbf{A} \mathbf{D}^{-\frac{1}{2}}\right) x$。此外，他们通过设置$θ=θ_0=-θ_1$来解决过度拟合，从而减少了参数数量，并得到$\Theta *_{\mathcal{G}} x \approx \theta\left(\mathbf{I}_{\mathrm{N}}+\mathbf{D}^{-\frac{1}{2}} \mathbf{A} \mathbf{D}^{-\frac{1}{2}}\right) x$。他们进一步定义$\mathbf{A}=\mathbf{A}+\mathbf{I}_{\mathbf{N}}$，并采用重归一化技巧，得到$y=\Theta *_{G} x \approx \theta \tilde{\mathbf{D}}^{-\frac{1}{2}} \tilde{\mathbf{A}} \tilde{\mathbf{D}}^{-\frac{1}{2}} x$，其中$\tilde{\mathbf{D}}$是$\tilde{\mathbf{A}}$的度矩阵。最后，[103]提出了频谱图卷积层为：
+$$
+\begin{aligned}
+Y_{j} &=\rho\left(\Theta_{j} *_{\mathcal{G}} X\right) \\
+&=\rho\left(\sum_{i=1}^{\mathbf{F}_{\mathrm{I}}} \theta_{i, j} \tilde{\mathbf{D}}^{-\frac{1}{2}} \tilde{\mathbf{A}} \tilde{\mathbf{D}}^{-\frac{1}{2}} X_{i}\right), 1 \leq j \leq \mathbf{F}_{\mathrm{O}} \\
+Y &=\boldsymbol{\rho}\left(\tilde{\mathbf{D}}^{-\frac{1}{2}} \tilde{\mathbf{A}} \tilde{\mathbf{D}}^{-\frac{1}{2}} X W\right)
+\end{aligned} \tag{4}
+$$
