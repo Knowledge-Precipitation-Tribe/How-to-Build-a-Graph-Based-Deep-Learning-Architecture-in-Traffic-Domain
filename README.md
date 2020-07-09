@@ -389,4 +389,146 @@ $$
 其中$\mathcal{Y}_{t, j}^{i} \in \mathbb{R}$是节点$i$在时间$t$的第$j$个输出特征。$\mathcal{X}_{t-\mathbf{d} k, m}^{i} \in \mathbb{R}$是节点$i$在时间$t-dk$的第$m$个输入特征。核$\Theta_{j} \in \mathbb{R}^{\mathbf{K} \times \mathbf{F}_{\mathbf{I}}}$是可训练的。$F_O$是输出特征的数量。
 
 将相同的卷积内核应用于流量网络上的所有节点，并且每个节点都会产生$F_O$新特征。$l$层的数学公式如下[62]，[93]
+$$
+\mathcal{Y}=\Theta * \tau \mathrm{d} \mathcal{X} \tag{14}
+$$
+其中$\mathcal{X} \in \mathbb{R}^{\mathbf{P} \times \mathbf{N} \times \mathbf{F}_{\mathbf{I}}}$表示过去$P$个时间段内整个交通网络的历史观测值，$\theta \in \mathbb{R}^ {\mathbf{K} \times \mathbf{F}_{\mathbf{I}} \times \mathbf{F}_{\mathbf{O}}}$表示相关的卷积核，$Y \in \mathbb{R}^{P×N×F_O}$是TCN层的输出。
+
+有一些技巧可以增强TCN在特定流量任务中的性能。例如，[93]堆叠了多个TCN层，以按底层提取短期相邻依存关系，并按较高层提取长期时间依存关系：
+$$
+\mathcal{Y}^{(l+1)}=\sigma\left(\Theta^{l} *_{\mathcal{T} \mathrm{d}^{l}} \mathcal{Y}^{(l)}\right) \tag{15}
+$$
+其中，$Y^{(l)}$是第l层的输入，$Y^{(l + 1)}$是其第l层的输出，$Y^{(0)}=X$。$d^l = 2^l$是第$l$层的膨胀率。
+
+为了降低模型训练的复杂性，[62]构造了一个包含两个具有相同膨胀率的TCN层的残差块，并将块输入添加到最后一个TCN层以获得块输出：
+$$
+\mathcal{Y}^{(l+1)}=\mathcal{Y}^{(l)}+\boldsymbol{\operatorname { R e } \boldsymbol { L }} \boldsymbol{U}\left(\Theta_{1}^{l} *_{\mathcal{T}^{\mathrm{d}}}\left(\boldsymbol{\operatorname { R e }} \boldsymbol{L} \boldsymbol{U}\left(\Theta_{0}^{l} *_{\mathcal{T}^{\mathrm{d}}} \mathcal{Y}^{(l)}\right)\right)\right) \tag{16}
+$$
+其中，$θ_1^l，θ_2^l$分别是第一层和第二层的卷积核。$Y^{(l)}$是残差块的输入，而$Y^{(l + 1 )}$是残差块的输出。
+
+[82]与TCN集成门控机制[116]以学习交通数据中的复杂时间依存关系：
+$$
+\mathcal{Y}=\boldsymbol{\rho}\left(\Theta_{1} *_{\mathcal{T}^{\mathrm{d}}} \mathcal{X}+b_{1}\right) \odot \boldsymbol{\sigma}\left(\Theta_{2} *_{\mathcal{T}^{\mathrm{d}}} \mathcal{X}+b_{2}\right) \tag{17}
+$$
+其中$σ(·)\in [0，1]$确定传递到下一层的信息的比率。
+
+类似地，[74]使用门控TCN并设置了扩张率d = 1而无零填充，以将输出长度缩短为$\mathcal{Y}=\left(\Theta_{1} *_{\mathcal{T}^{1}} \mathcal{X}\right) \odot \sigma\left(\Theta_{2} *_{\mathcal{T}^{1}} \mathcal{X}\right)$。他们认为这可以发现时间序列交通数据中的差异。
+
+## [Seq2Seq](#content)
+
+![fig9](./img/fig9.png)
+
+### [Seq2Seq](#content)
+
+2014年提出的Sequence to Sequence（Seq2Seq）模型[120]已广泛用于序列预测，例如机器翻译[121]。Seq2Seq体系结构由两个部分组成，即负责将输入序列X转换为固定潜在矢量C的编码器和负责将C转换为输出序列Y的解码器。请注意，X和Y可以具有不同的长度（如如图9所示）。
+$$
+\mathbf{X}=\left[\mathbf{X}_{1}, \cdots, \mathbf{X}_{\mathbf{P}}\right] \stackrel{S e q 2 S e q}{\longrightarrow} \mathbf{Y}=\left[\mathbf{Y}_{1}, \cdots, \mathbf{Y}_{\mathbf{Q}}\right] \tag{18}
+$$
+其中$P$是输入长度，$Q$是输出长度。$Y_j$的具体计算如下：
+$$
+\begin{aligned}
+\mathbf{H}_{i} &=\operatorname{Encoder}\left(\mathbf{X}_{i}, \mathbf{H}_{i-1}\right) \\
+\mathbf{C} &=\mathbf{H}_{\mathbf{P}}, \mathbf{S}_{0}=\mathbf{H}_{\mathbf{P}} \\
+\mathbf{S}_{j} &=\text {Decoder}\left(\mathbf{C}, \mathbf{Y}_{j-1}, \mathbf{S}_{j-1}\right) \\
+\mathbf{Y}_{j} &=\mathbf{S}_{j} W
+\end{aligned} \tag{19}
+$$
+这里，$H_i$是与输入$X_i$相关的隐藏状态。$H_0$使用小的非零元素初始化。$S_j$是与输出$Y_j$相关的隐藏状态。$Y_0$是开始符号的表示。注意，编码器和解码器可以是任何模型，只要它可以接受序列（向量或矩阵）并产生序列即可，例如RNN，LSTM，GRU或其他新颖的模型。
+
+Seq2Seq的一个主要限制是，每个$Y_j$的潜在向量$C$是固定的，而$Y_j$与$X_j$的相关性可能比其他元素强。为了解决这个问题，将注意力机制集成到Seq2Seq中，使解码器可以专注于输入序列中与任务相关的部分，从而帮助解码器做出更好的决策。
+$$
+\begin{array}{l}
+\mathbf{H}_{i}=\operatorname{Encoder}\left(\mathbf{X}_{i}, \mathbf{H}_{i-1}\right) \\
+\mathbf{C}_{j}=\sum_{i=1}^{\mathbf{P}}\left(\theta_{j i} \mathbf{H}_{i}\right), \mathbf{S}_{0}=\mathbf{H}_{\mathbf{P}} \\
+\mathbf{S}_{j}=\operatorname{Decoder}\left(\mathbf{C}_{j}, \mathbf{Y}_{j-1}, \mathbf{S}_{j-1}\right) \\
+\mathbf{Y}_{j}=\mathbf{S}_{j} W
+\end{array} \tag{20}
+$$
+其中，$\theta_{j i}=\frac{\exp \left(f_{j i}\right)}{\sum_{k=1}^{\mathrm{P}} \exp \left(f_{j k}\right)}$是归一化注意力分数，而$f_{ji} = f(H_j，S_{i-1})$[121]是测量第$i$个输入与第$j$个输出之间的相关性的函数，例如[122]提出了三种注意力得分的计算方法。
+$$
+f_{j i}=\left\{\begin{array}{ll}
+\mathbf{H}_{j}^{T} \mathbf{S}_{i-1} & \text { dot } \\
+\mathbf{H}_{j}^{T} \boldsymbol{W}_{a} \mathbf{S}_{i-1} & \text { general } \\
+\boldsymbol{v}_{a}^{T} \tanh \left(\boldsymbol{W}_{\boldsymbol{a}}\left[\mathbf{H}_{j}, \mathbf{S}_{i-1}\right]\right) & \text { concat }
+\end{array}\right. \tag{21}
+$$
+增强Seq2Seq性能的另一种方法是调度采样技术[123]。在训练和测试阶段，解码器的输入是不同的。在训练阶段，解码器将获得训练数据集的真实标签，而在测试阶段则将其自身生成的预测馈入解码器，这会在测试时积累错误并导致性能下降。为了缓解此问题，计划采样被集成到模型中。在训练过程中的第$j$次迭代中，有$\epsilon_{j}$概率为解码器提供真实标签，而有$1-\epsilon_{j}$概率在上一步具有预测。概率$\epsilon_{j}$逐渐减小到0，从而使解码器可以学习测试分布[89]，并尽可能保持训练和测试相同。
+
+### [Seq2Seq in Traffic Domain](#content)
+
+由于Seq2Seq可以采用一个输入序列来生成具有不同长度的输出序列，因此在许多交通运输工程中，它已应用于多步预测中。编码器将历史交通数据编码为潜在空间向量。然后，将潜在向量馈入解码器以生成未来的交通状况。
+
+注意力机制通常并入Seq2Seq中，以模拟在不同时隙[81]，[79]，[90]，[67]上来自先前流量观察的对未来预测的不同影响。
+
+许多交通文献中的编码器和解码器负责捕获空间时间相关性。例如，[89]提出DCGRU作为编码器和解码器，可以共同捕获空间和时间动态。编码器和解码器的设计通常是相关论文的核心贡献和新颖之处。但是编码器和解码器不一定相同，我们在以前的基于图的流量工作中总结了Seq2Seq结构（如表III所示）。
+
+![table3](./img/table3.png)
+
+注意，基于RNN的解码器在测试推断期间存在严重的错误累积问题，这是因为每个先前的预测步骤是产生下一步预测的输入。[89]，[84]采用了计划抽样以缓解这一问题。[67]用短期和长期的解码器代替了基于RNNs的解码器，专门用于最后一步的预测，从而简化了错误累积。Seq2Seq技术在流量域中的使用非常灵活，例如[81]将Seq2Seq集成到一个更大的框架中，成为GAN的生成器和鉴别器。
+
+## [GAN](#content)
+
+![fig10](./img/fig10.png)
+
+图10.生成对抗网络：生成器G负责从随机向量z生成生成的样本$x_f = G(z)$，该样本从先前的分布$p_z$采样。鉴别器D负责从训练数据中鉴别出从G产生的伪样本$x_f$和真实样本$x_r$。
+
+### [GAN](#content)
+
+生成对抗网络（GAN）[124]是一个强大的深度生成模型，旨在生成与真实对应物尽可能无法区分的人工样本。GAN受博弈论的启发，由两个参与者组成，一个称为生成器G的生成神经网络，一个称为鉴别器D的对抗网络（如图10所示）。
+
+鉴别器D试图确定输入样本是属于生成的数据还是真实数据，而生成器G试图通过产生尽可能真实的样本来欺骗鉴别器D。相互对抗和优化的两个过程经过交替训练，从而增强了D和G的性能。当G生成的假样本非常接近地面真相并且D无法再区分它们时，可以认为是GeneratorG已经了解了真实数据的真实分布，并且模型收敛了。这时，我们可以考虑使该博弈达到纳什均衡。
+
+从数学上讲，可以制定这样的过程以最小化其损失$Loss_G$和$Loss_D$。损失函数是用$f$表示的交叉熵，我们可以得到：
+$$
+\begin{aligned}
+\operatorname{Loss}_{G} &=f(D(G(z)), 1)=-\sum \log D(G(z)) \\
+\phi^{*} &=\underset{\phi}{\operatorname{argmin}}\left(\operatorname{Los} s_{G}\right)=\operatorname{argmax}_{\phi}\left(-\operatorname{Los} s_{G}\right) \\
+&=\underset{\phi}{\operatorname{argmax}} \mathbb{E}(\log D(G(z)))
+\end{aligned} \tag{22}
+$$
+
+$$
+\begin{aligned}
+\operatorname{Loss}_{D} &=f\left(D\left(x_{r}\right), 1, D\left(x_{f}\right), 0\right) \\
+&=-\sum \log D\left(x_{r}\right)-\sum \log \left(1-D\left(x_{f}\right)\right) \\
+\theta^{*} &=\underset{\theta}{\operatorname{argmin}\left(\operatorname{Loss}_{D}\right)=\operatorname{argmax}}\left(-\operatorname{Los} s_{D}\right) \\
+&=\underset{\theta}{\operatorname{argmax}}\left(\mathbb{E}\left(\log D\left(x_{r}\right)+\log \left(1-D\left(x_{f}\right)\right)\right)\right)
+\end{aligned} \tag{23}
+$$
+
+其中1是真实样本$x_r$的标签。0是假样本$x_f = G(z)$ 的标签。$\phi$和$\theta$ 分别是G和D的可训练参数。请注意，训练G时，D是不可训练的。有兴趣的读者可以参考[125]，[126]。
+
+### [GAN in Traffic Domain](#content)
+
+当将GAN用于交通预测任务[127]，[128]时，通常会使用生成器G根据历史观测值生成未来的交通观测值。然后将生成的数据和将来的实际数据馈入鉴别器D进行训练。训练后，生成器G可以通过大量历史数据来学习实际交通流数据的分布，并可以用来预测未来的交通状态[81]。GAN还可以用于解决交通数据的稀疏性问题，因为它具有处理数据生成的功效[76]。
+
+此外，取决于特定的流量任务，GAN的生成器或判别器可以是任何模型，例如RNN，Seq2Seq。
+
+# [Challenges Perspective](#content)
+
+由于交通网络中区域之间时空的复杂依赖性，许多交通任务非常具有挑战性。另外，外部因素也是提高预测精度的重要因素。在本节中，我们介绍了流量域中的常见挑战。我们会认真研究每个挑战和相应的解决方案，并进行必要的比较。
+
+## [Spatial Dependency](#content)
+
+许多先前的文献[106]，[107]，[129]通过将整个交通网络分解为段或网格，然后采用CNN来处理基于网格的数据来提取空间特征。但是，CNN只能捕获空间局部性，而忽略网络的全局性。更糟糕的是，基于网格的假设实际上违反了交通网络的自然拓扑。因为许多交通网络在物理上都组织成一个图，并且图拓扑信息显然对于交通预测很有用（如图11所示）。因此，图神经网络可以比基于网格的方法更好地模拟交通网络中的空间依赖性。
+
+![fig11](./img/fig11.png)
+
+图11.双向道路的公式：道路$R_1$的交通状况仅受同一条道路$R_2$的影响，与对面的道路$R_3$的相关性较弱。但是，如果将该区域建模为网格，则$R_3$对$R_1$的影响与$R_2$相似，这是事实。如果将其建模为图形，则$R_1$与$R_2$连接并且与$R_3$断开连接，这可以反映出真实的关系。
+
+但是，交通网络中的空间依赖性非常复杂，我们将其分为三个空间属性，即空间局部性，多重关系，全局连通性。有几种GNN与其他深度学习技术相结合，可以有效地对不同的空间属性进行建模。
+
+### [Spatial Locality](#content)
+
+空间局部性是指相邻区域通常彼此高度相关。例如，地铁站的客流显然受到其相连站的影响。广泛采用K-localized频谱图卷积网络（SGCN）将0到$K -1$跳邻居的信息聚集到中心区域。但是，有些工作对空间局部性做出了不同的假设，并利用了一些新颖的技巧。
+
+代表交通拓扑的邻接矩阵通常是预先定义的，而[61]，[18]则认为相邻位置之间是动态相关的。他们将注意力机制整合到了SGCN中，以自适应地捕获周围区域之间的动态相关性。
+
+SGCN要求所有区域都具有相同的本地统计信息，并且其卷积内核与位置无关。但是，[60]澄清了交通数据的本地统计信息在不同地区之间的变化，他们自动为不同地区设计了位置相关的内核。
+
+### [Multiple Relationships](#content)
+
+虽然局部性属性着重于空间邻近性，但目标区域可以通过各种非欧几里得关系与远处区域相关联（如图5所示）。例如，功能相似性是指在功能方面，较远的区域与目标区域相似，这可以通过周围的POI来表征[74]，[62]。交通运输的连通性表明，那些地理上相距遥远但交通方便的地方可以相互关联[74]。可达的方式可以是高速公路，普通公路，地铁。[74]使用多个图对这些不同类型的相关性进行编码，并利用多图卷积来显式提取这些相关性信息。[73]采用语义邻居来模拟起点和终点之间的相关性。相关性通过它们之间的客流来衡量。
+
+### [Global Connectivity](#content)
 
