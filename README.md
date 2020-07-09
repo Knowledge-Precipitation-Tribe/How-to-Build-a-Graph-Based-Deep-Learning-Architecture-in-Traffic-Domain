@@ -233,3 +233,75 @@ Y_{j} &=\rho\left(\Theta_{j} *_{\mathcal{G}} X\right) \\
 Y &=\boldsymbol{\rho}\left(\tilde{\mathbf{D}}^{-\frac{1}{2}} \tilde{\mathbf{A}} \tilde{\mathbf{D}}^{-\frac{1}{2}} X W\right)
 \end{aligned} \tag{4}
 $$
+这里，$X \in \mathbb{R}^{\mathbf{N} \times \mathbf{F}_{\mathbf{I}}}$是具有$F_I$特征的图输入，$X_i \in \mathbb{R}^N$是其第$i$个特征。$Y \in \mathbb{R}_{N×F_O}$是图输出，$Y_j \in \mathbb{R}^N$是其第$j$个特征。$W \in \mathbb{R}^{F_I×F_O}$是可训练的参数。$\rho=(\cdot)$是激活函数。这样的层可以聚合1跳邻居的信息。可以通过堆叠多个图卷积层来扩展接收邻域[18]。
+
+### [Diffusion Graph Convolution](#content)
+
+频谱图卷积需要对称的拉普拉斯矩阵来实现特征分解。对于具有不对称拉普拉斯矩阵的有向图，它变得无效。扩散卷积源自图扩散而对图没有任何约束。图扩散[104]，[105]可以表示为转移矩阵的幂级数，给出在每一步从节点$i$跳到节点$j$的概率。经过许多步骤，这种马尔可夫过程收敛到平稳分布$\mathcal{P}=\sum_{k=0}^{\infty} \alpha(1-\alpha)^{k}\left(\mathbf{D}_{\mathbf{O}}^{-1} \mathbf{A}\right)^{k}$，其中$D_O^{-1}A$是转移矩阵，$α \in [0,1]$是重新启动概率，$k$是扩散步骤。实际上，采用了扩散过程的有限$K$步截断，并且为每个步分配了可训练的权重$\theta$。基于K步扩散过程，[89]将扩散图卷积定义为：
+$$
+y=\Theta *_{\mathcal{G}} x=\sum_{k=0}^{K-1}\left(\theta_{k, 1}\left(\mathbf{D}_{\mathbf{O}}^{-1} \mathbf{A}\right)^{k}+\theta_{k, 2}\left(\mathbf{D}_{\mathbf{I}}^{-1} \mathbf{A}^{T}\right)^{k}\right) x \tag{5}
+$$
+在此，$D_O^{-1}A$和$D_I^{-1}A^T$分别表示转移矩阵及其逆矩阵。这种双向扩散使操作能够捕获有向图上的空间相关性[89]。与光谱图卷积层相似，扩散图卷积层的构建如下：
+$$
+\begin{aligned}
+Y_{j} &=\rho\left(\Theta_{j} *_{\mathcal{G}} X\right) \\
+&=\rho\left(\sum_{k=0}^{\mathrm{K}-1} \sum_{i=1}^{\mathrm{F}_{\mathrm{I}}}\left(\theta_{k, 1}\left(\mathrm{D}_{\mathrm{O}}^{-1} \mathbf{A}\right)^{k}+\theta_{k, 2}\left(\mathbf{D}_{\mathbf{I}}^{-1} \mathbf{A}^{T}\right)^{k}\right) X_{i}\right) \\
+1 & \leq j \leq \mathbf{F}_{\mathbf{O}} \\
+Y &=\boldsymbol{\rho}\left(\sum_{k=0}^{\mathbf{K}-1}\left(\mathbf{D}_{\mathbf{O}}^{-1} \mathbf{A}\right)^{k} X W_{k 1}+\left(\mathbf{D}_{\mathbf{I}}^{-1} \mathbf{A}^{T}\right)^{k} X W_{k 2}\right)
+\end{aligned} \tag{6}
+$$
+其中参数$W_{k1}，W_{k2} \in \mathbb{R}^{F_I×F_O}$是可训练的。
+
+### [GNNs in Traffic Domain](#content)
+
+许多交通网络自然是图结构（请参见第三部分）。但是，以前的研究只能大致捕获空间局部性，这是由于将它们建模为网格或网段网络的折衷[106]，[107]，而忽略了交通网络的连通性和全局性。在我们研究的文献中，他们都将交通网络建模为图表，以充分利用空间信息。
+
+许多工作直接在交通图上使用卷积运算来捕获交通数据的复杂空间依赖性。它们中的大多数采用频谱图卷积（SGC），而有些采用扩散图卷积（DGC）[91]，[89]，[81]，[82]，[77]，[72]。还有其他一些图神经网络，例如图注意力网络（GAT）[97]，[88]，[79]，[84]，图上的张量分解和聚合[69]，但它们的相关工作很少，它们可能是未来的研究方向。
+
+SGC和DGC之间的关键区别在于它们的矩阵，它们代表了交通网络空间相关性的不同假设。SGC中的邻接矩阵推断出图中的中心节点与其直接相邻节点的关联性强于其他远距离节点，这反映了许多交通场景中的现实[74]，[62]。DGC中的状态转换矩阵表明空间依赖性是随机的和动态的，而不是固定的和规则的。交通流与交通图上的扩散过程有关，以对其变化的空间相关性建模。另外，DGC中的双向扩散为模型提供了更大的灵活性，可以捕获来自上游和下游流量的影响[89]。总之，DGC比SGC更复杂。DGC可用于任何交通网络图中，而SGC仅可用于处理对称交通图。
+
+当涉及与交通有关的空间时间预测问题时，输入的是3-D张量$X \in \mathbb{R}^{P×N×F_I}$，而不是2-D张量$X \in \mathbb{R}^{N×F_I}$。因此，卷积运算需要进一步推广到3-D张量。在许多工作中，具有相同内核的同等卷积运算（例如SGC，DGC）被并行地施加于$\mathcal{X}$的每个时间步[74]，[62]，[93]，[94]。
+
+另外，为了提高交通任务中图卷积的性能，许多作品根据其预测目标开发了SGC的一些变体以及其他技术。
+
+例如，[61]用注意力机制重新定义了SGC，以自适应地捕获交通网络中的动态相关性: $\Theta *_{\mathcal{G}} x \approx \sum_{k=0}^{\mathrm{K}-1} \theta_{k}\left(T_{k}(\tilde{\mathbf{L}}) \odot \mathbf{S}\right) x$，其中$S=W_{1} \odot \rho\left(\left(X W_{2}\right) W_{3}\left(W_{4} X\right)^{T}+b\right) \in \mathbb{R}^{N \times N}$是空间关注度。
+
+[63]通过扫描图上的$K$阶邻居和时间轴上的$K_t$邻居而无需填充，从而在空间和时间维度上对SGC进行了广义化，从而在每一步将序列的长度缩短了$K_t − 1$：
+$$
+\mathcal{Y}_{t, j}=\boldsymbol{\rho}\left(\sum_{t^{\prime}=0}^{\mathbf{K}_{t}-1} \sum_{k=0}^{\mathbf{K}-1} \sum_{i=1}^{\mathbf{F}_{\mathrm{I}}} \theta_{j, t^{\prime}, k, i} \tilde{\mathbf{L}}^{k} \mathcal{X}_{t-t^{\prime}, i}\right) \tag{7}
+$$
+其中$\mathcal{X}_{t-t^{\prime}, i} \in \mathbb{R}^{\mathbf{N}}$是在时间$t-t^{\prime}$处输入$X$的第$i$个特征，$\mathcal{Y}_{t, j} \in \mathbb{R}^{\mathbf{N}}$是在时间$t$处输出$Y$的第$j$个特征。
+
+[75]将SGC更改为$\Theta *_{\mathcal{G}} x=\left(W \odot \tilde{\mathbf{A}}^{\mathbf{K}} \odot \mathcal{F} \mathcal{F} \mathcal{R}\right) x$，其中$\tilde{\mathbf{A}}^K$是K跳邻域矩阵，而FFR是代表道路物理特性的矩阵。[98]，[90]紧接着这项工作，并重新定义了$\Theta *_{\mathcal{G}} x=(W \odot\left.B i\left(\mathbf{A}^{\mathbf{K}}+\mathbf{I}_{\mathbf{N}}\right)\right) x$，其中$B i(.)$是将矩阵中每个非零元素剪裁为1的函数。[95]
+
+[95]将SGC中的邻接矩阵$A$修改为$S = A \odot w$将地理空间位置信息整合到模型中，其中$ω$是通过阈值高斯核加权函数计算的矩阵。将该层构建为$Y=\rho\left(\tilde{\mathbf{Q}}^{-\frac{1}{2}} \tilde{\mathbf{S}} \tilde{\mathbf{Q}}^{-\frac{1}{2}} X W\right)$，其中$\tilde{\mathbf{Q}}$是$\tilde{\mathbf{S}}=S+I_N$的度矩阵。
+
+[49]设计了一种新颖的基于边缘的道路网络SGC，以提取边缘特征的时空相关性。特征矩阵X和邻接矩阵A都在边上而不是节点上定义。
+
+## [RNNs](#content)
+
+递归神经网络（RNN）是一种神经网络体系结构，主要用于检测数据序列中的模式[108]。在许多交通任务中收集的交通数据是时间序列数据，因此在这些交通文献中通常使用RNN来捕获交通数据中的时间依赖性。在本小节中，我们介绍了RNN的三种经典模型（即RNN，LSTM，GRU）以及它们之间的相关性，这为实验人员为特定交通问题选择合适的模型提供了理论依据。
+
+### [RNN](#content)
+
+类似于经典前馈神经网络（FNN），简单的递归神经网络（RNN）[109]包含三层，即输入层，隐藏层，输出层[110]。RNN与FNN的区别在于隐藏层。它在FNN中将信息传递到输出层，而在RNN中，它也将信息传递回自身形成一个循环[108]。因此，RNN中的隐藏层称为循环隐藏层。这种循环技巧可以保留历史信息，从而使RNN可以处理时间序列数据。
+
+假设RNN的输入，隐藏和输出层分别有$F_I,F_H,F_O$单元。输入层采用时间序列数据$\mathbf{X}=\left[\mathbf{X}_{1}, \cdots, \mathbf{X}_{\mathbf{P}}\right] \in \mathbb{R}^{\mathbf{P} \times \mathbf{F}_{\mathbf{I}}}$。对于时间$t$的每个元素，隐藏层将其转换为$H_t \in \mathbb{R}^{F_H}$，而输出层将$H_t$映射为$Y_t \in \mathbb{R}^{F_O}$。注意，隐藏层不仅将$X_t$作为输入，而且还将$H_{t-1}$作为输入。这种循环机制使RNN可以记住过去的信息（如图7所示）。
+
+![fig7](./img/fig7.png)
+
+隐藏层和输出层的数学符号如下。
+$$
+\begin{array}{l}
+\mathbf{H}_{t}=\tanh \left(\left[\mathbf{H}_{t-1}, \mathbf{X}_{t}\right] \cdot W_{h}+b_{h}\right) \\
+\mathbf{Y}_{t}=\rho\left(\mathbf{H}_{t} \cdot W_{y}+b_{y}\right)
+\end{array} \tag{8}
+$$
+其中$W_{h} \in \mathbb{R}^{\left(\mathbf{F}_{\mathbf{I}}+\mathbf{F}_{\mathbf{H}}\right) \times \mathbf{F}_{\mathbf{H}}}, W_{y} \in \mathbb{R}^{\mathbf{F}_{\mathbf{H}} \times \mathbf{F}_{\mathbf{O}}}, b_{h} \in \mathbb{R}^{\mathbf{F}_{\mathbf{H}}},b_{y} \in \mathbb{R}^{\mathbf{F}_{\mathrm{O}}}$是可训练的参数。$t=1, \cdots, \mathbf{P}$和P是输入序列的长度。使用小的非零元素初始化$H_0$，这可以改善网络的整体性能和稳定性[111]。
+
+简而言之，RNN将顺序数据作为输入，并生成RNN另一个长度相同的序列：$\left[\mathbf{X}_{1}, \cdots, \mathbf{X}_{\mathbf{P}}\right] \stackrel{R N N}{\longrightarrow}\left[\mathbf{Y}_{1}, \cdots, \mathbf{Y}_{\mathbf{P}}\right]$。请注意，我们可以通过堆叠多个递归隐藏层来加深RNN。
+
+### [LSTM](#content)
+
+尽管隐藏状态使RNN可以记住过去时间步长上的输入信息，但是它也引入了（可能很长）序列上的矩阵乘法。矩阵乘法中的小值会导致梯度在每个时间步减小，从而导致最终消失现象，而相反的大值会导致爆炸问题[112]。梯度的上升或消失实际上阻碍了RNN学习数据中长期顺序依存关系的能力[110]。
+
