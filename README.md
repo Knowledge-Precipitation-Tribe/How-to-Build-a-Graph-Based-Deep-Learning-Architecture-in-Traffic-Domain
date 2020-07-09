@@ -532,3 +532,182 @@ SGCN要求所有区域都具有相同的本地统计信息，并且其卷积内�
 
 ### [Global Connectivity](#content)
 
+空间邻近性和多关系依赖关系都侧重于网络的某些部分，而忽略了整个结构。全局连通性是指在整个网络范围内，不同区域的流量状况相互影响。在全局范围内开发交通网络的结构信息有几种策略。
+
+捕获全局连通性的一种流行方法是，将流量网络上不断变化的流量条件建模为在网络规模上发生的扩散过程，这由幂级数转换矩阵表示。然后，采用扩散图卷积网络（DGCN）全局提取空间相关性[91]，[89]，[81]，[82]，[77]，[72]。
+
+[85]用路径增长算法设计了一个新颖的空间图池层，以产生一个更粗糙的图。他们将该池层堆叠在SGC层之前，以获得多粒度图卷积，该卷积可以提取各种范围内的空间特征。
+
+[82]提出了一个具有自适应邻接矩阵的SGC层来捕获数据中隐藏的全局空间依赖性。通过端到端有监督的训练从数据中学习该自适应邻接矩阵。
+
+## [Temporal Dependency](#content)
+
+时间依赖性是指某个时间的预测通常与各种历史观测值相关联[74]。
+
+如第四部分所述，许多工作都是通过基于RNN的方法提取时间相关性的。但是，基于RNN的方法存在耗时的迭代过程，并且面临捕获长序列的梯度爆炸/消失问题。因此，一些作品采用基于TCN的方法，具有结构简单，并行计算和稳定梯度的优势[74]，[62]。另外，TCN能够通过堆叠多层来处理不同的时间级别。例如，[93]，[82]堆叠了多个TCN层，底层提取了短期的相邻依赖关系，而高层则学习了长期的时间特征。
+
+### [Multi-timescale](#content)
+
+一些作品从多时间维度的角度提取时间依赖性[61]，[95]。[61]将时间依存关系分解为最近，每日和每周的依存关系。最近的依赖性是指未来的交通状况最近受到交通状况的影响。例如，上午9点的交通拥堵不可避免地会影响接下来几个小时的交通流量。每日依赖度描述了交通数据中重复的每日模式，这是由于人们的日常例行活动，例如早高峰和晚高峰。每周依赖性考虑了由同一周属性引起的影响，例如，所有星期一在短期内共享相似的流量模式。[61]设置三个具有相同结构的并行组件，分别对这三个时间属性进行建模。
+
+### [Different Weights](#content)
+
+一些工作认为，历史和未来观测之间的相关性在不同的先前时间片中是变化的。[61]采用时间注意机制来适应性地重视历史数据。
+
+## [Spatiotemporal Dependency](#content)
+
+许多工作以顺序的方式分别捕获空间和时间依赖性[90]，[81]，[75]，[55]，[87]，[98]，[56]，而空间和时间依赖性紧密地交织在一起。交通数据。[61]认为，在不同时间对不同地点的历史观察对未来中部地区有不同的影响。举一个明显的例子，由于交通堵塞的逐渐形成和扩散，在一个关键道路发生交通事故，会在不同的时间对相关道路造成严重的破坏。
+
+单独建模的局限性在于，空间特征和时间特征之间的潜在相互作用被完全忽略了，这可能会损害预测性能。为了克服这种局限性，一种流行的方法是将图卷积运算（例如SGC，DGC）合并到RNN（如第四部分所述）以共同捕获空间时间相关性[58]，[91]，[89]，[86]，[77]，[72]，[18]，[85]，[68]。
+
+## [External Factors](#content)
+
+除了正常的空间数据和时间数据，还有一些其他类型的数据与交通预测任务高度相关，例如假期，小时/天/周/月/月/季节/年相关属性（例如，工作日和周末）[62]，[95]，天气（例如降雨，温度，空气质量）[95]，特殊事件，POI [74]，交通事故（例如事故发生时间，事故类型）[87]，我们将其称为外部因素或背景因素。请注意，[90]将历史统计速度信息（例如，行车速度的平均值或标准偏差）视为外部因素。
+
+在我们的日常生活中可以观察到一些与外部因素有关的交通现象。例如，商业区域和居民区是具有不同交通流的不同兴趣点（POI）。与正常工作日相比，假期的交通需求有形地增长。暴雨绝对会减少交通量。另外，大规模的音乐会或足球比赛导致交通聚集，影响周围的交通状况。
+
+在外部因素中，离散值（例如天属性，节假日和天气状况）通常通过一键编码转换为二进制矢量，而包括温度，风速在内的连续值则通过Min-Max归一化或Z-score进行缩放。
+
+在我们调查的文献中，有两种方法可以处理外部因素。第一种方法是将外部因素与其他特征串联起来，并将其输入模型[91]，[62]。第二种方法是设计一个仅负责处理外部因素的外部组件。外部组件通常包含两个FC层，其中第一层提取重要特征，第二层将低维特征映射到高维[62]，[87]，[95]，[42]。[92]采用多层LSTM层提取背景因素的表示。外部组件的输出与其他组件融合在一起以生成最终结果。
+
+# [Public Datasets and Open Source Codes](#content)
+
+> 这部分更多内容可以参考：[https://github.com/Knowledge-Precipitation-Tribe/Urban-computing-papers](https://github.com/Knowledge-Precipitation-Tribe/Urban-computing-papers)
+
+## [Public Datasets](#content)
+
+我们在调查中总结了一些公共数据集（如表IV所示），以帮助后继者参与该领域并产生更多有价值的作品。
+
+![table4](./img/table4.png)
+
+## [Open Source Codes Open-source](#content)
+
+开源实现有助于研究人员比较他们的方法。我们提供了本文回顾的文献的公共源代码的超链接（如表V所示），以促进交通领域的基础实验。
+
+![table5](./img/table5.png)
+
+# [Future Directions](#content)
+
+表II概述了我们仔细检查的相关工作。在这些工作的基础上，我们为研究人员提出了进一步探索的方向，可以分为应用相关，技术相关，外部因素相关的方向。
+
+如表II所示，有许多利用基于图的深度学习体系结构来解决交通状态预测和交通需求预测的工作，这些技术已经达到了最先进的性能。然而，只有少数工作在其他研究方向上以图形角度分析交通数据，例如驾驶员行为分类[55]，最佳DETC方案[49]，车辆/人的轨迹预测[56]，[57]，路径可用性[58]，交通信号控制[59]。当涉及交通事故检测，车辆检测时，采用基于图的深度学习技术的工作很少。就我们而言，我们找不到任何一个。因此，即将参加的参与者可以在图形视图上探索这些方向，并从现有作品中学习成功的经验。
+
+现有的大多数工作都使用频谱图卷积网络（SGCN）和扩散图卷积网络（DGCN）这两种流行的GNN，来分析相关的交通任务。流量域中的图注意力网络（GAT）[130]很少[79]，[84]，[88]，[97]。其他种类的GNN，例如图自动编码器（GAE）[131]，[132]，递归图神经网络（RecGNN）[133]在其他领域都达到了最先进的性能，但很少探索到目前为止的交通任务。因此，值得将这些GNN扩展到流量域。另外，大多数基于图的交通工作都是回归任务，而只有[58]，[55]是分类任务。研究人员可以从图的角度探索分类交通任务。
+
+最后，许多现有的流量模型没有考虑外部因素，因为外部因素很难收集，量化并具有各种数据格式。外部因素的稀疏性仍然是研究界面临的挑战。另外，处理外部因素的技术还很幼稚，例如，一个简单的完全连接的层。应该有更多的方法来收集和处理外部因素。
+
+# [CONCLUSION](#content)
+
+在本次调查中，我们对交通工程中各种基于图的深度学习架构进行了全面回顾。更具体地说，我们总结了基于一般图形的交通问题公式，以及从各种交通数据集中构造图形的方法。此外，我们分解所有研究的架构，并分析它们共享的通用模块，包括图神经网络（GNN），递归神经网络（RNN），时间卷积网络（TCN），序列到序列（Seq2Seq）模型，生成对抗性网络（GAN）。我们对交通任务中的变量进行了详尽的描述，希望为即将到来的研究人员提供有关如何为自己的交通任务设计新颖技术的见解。我们还总结了许多交通场景中的常见挑战，例如空间依赖性，时间依赖性，外部因素。不仅如此，我们针对每种挑战提供了多种基于深度学习的解决方案。此外，我们在相关著作中提供了一些公共数据集和代码的超链接，以方便即将进行的研究。最后，我们为对此领域感兴趣的参与者提出了一些未来的方向。
+
+# [REFERENCES](#content)
+
+[1] M. S. Ahmed and A. R. Cook, Analysis of freeway traffic time-series data by using Box-Jenkins techniques, 1979, no. 722.
+[2] B. M. Williams and L. A. Hoel, “Modeling and forecasting vehicular traffic flow as a seasonal arima process: Theoretical basis and empirical results,” Journal of transportation engineering, vol. 129, no. 6, pp. 664–672, 2003.
+[3] E. Zivot and J. Wang, “Vector autoregressive models for multivariate time series,” Modeling Financial Time Series with S-Plus R?, pp. 385– 429, 2006.
+[4] Y. Xie, Y. Zhang, and Z. Ye, “Short-term traffic volume forecasting using kalman filter with discrete wavelet decomposition,” Computer- Aided Civil and Infrastructure Engineering, vol. 22, no. 5, pp. 326–334, 2007.
+[5] Y.-S. Jeong, Y.-J. Byon, M. M. Castro-Neto, and S. M. Easa, “Super- vised weighting-online learning algorithm for short-term traffic flow prediction,” IEEE Transactions on Intelligent Transportation Systems, vol. 14, no. 4, pp. 1700–1707, 2013.
+[6] J. Van Lint and C. Van Hinsbergen, “Short-term traffic and travel time prediction models,” Artificial Intelligence Applications to Critical Transportation Issues, vol. 22, no. 1, pp. 22–41, 2012.
+[7] J. Liu, T. Li, P. Xie, S. Du, F. Teng, and X. Yang, “Urban big data fusion based on deep learning: An overview,” Information Fusion, vol. 53, pp. 123–133, 2020.
+[8] N. Laptev, J. Yosinski, L. E. Li, and S. Smyl, “Time-series extreme event forecasting with neural networks at uber,” in International Conference on Machine Learning, vol. 34, 2017, pp. 1–5.
+
+[9] X. Ma, Z. Dai, Z. He, J. Ma, Y. Wang, and Y. Wang, “Learning traffic as images: a deep convolutional neural network for large-scale transportation network speed prediction,” Sensors, vol. 17, no. 4, p. 818, 2017.
+[10] Y. Sun, X. Yu, R. Bie, and H. Song, “Discovering time-dependent shortest path on traffic graph for drivers towards green driving,” Journal of Network and Computer Applications, vol. 83, pp. 204–212, 2017.
+[11] H. Sun, J. Wu, D. Ma, and J. Long, “Spatial distribution complexities of traffic congestion and bottlenecks in different network topologies,” Applied Mathematical Modelling, vol. 38, no. 2, pp. 496–505, 2014.
+[12] G. Kalafatas and S. Peeta, “An exact graph structure for dynamic traffic assignment: Formulation, properties, and computational experience,” Tech. Rep., 2007.
+[13] M. Gori, G. Monfardini, and F. Scarselli, “A new model for learning in graph domains,” in Proceedings. 2005 IEEE International Joint Conference on Neural Networks, 2005., vol. 2. IEEE, 2005, pp. 729– 734.
+[14] F. Scarselli, M. Gori, A. C. Tsoi, M. Hagenbuchner, and G. Monfardini, “The graph neural network model,” IEEE Transactions on Neural Networks, vol. 20, no. 1, pp. 61–80, 2008.
+[15] M. Henaff, J. Bruna, and Y. LeCun, “Deep convolutional networks on graph-structured data,” arXiv preprint arXiv:1506.05163, 2015.
+[16] Y. Li, O. Vinyals, C. Dyer, R. Pascanu, and P. Battaglia, “Learning deep generative models of graphs,” arXiv preprint arXiv:1803.03324, 2018.
+[17] Z. Guo, Y. Zhang, and W. Lu, “Attention guided graph convolutional networks for relation extraction,” in Proceedings of the 57th Annual Meeting of the Association for Computational Linguistics, 2019, pp. 241–251.
+[18] W. Chen, L. Chen, Y. Xie, W. Cao, Y. Gao, and X. Feng, “Multi- range attentive bicomponent graph convolutional network for traffic forecasting,” arXiv preprint arXiv:1911.12093, 2019.
+
+[19] D. K. Duvenaud, D. Maclaurin, J. Iparraguirre, R. Bombarell, T. Hirzel, A. Aspuru-Guzik, and R. P. Adams, “Convolutional networks on graphs for learning molecular fingerprints,” in Advances in neural information processing systems, 2015, pp. 2224–2232.
+[20] R. Ying, R. He, K. Chen, P. Eksombatchai, W. L. Hamilton, and J. Leskovec, “Graph convolutional neural networks for web-scale recommender systems,” in Proceedings of the 24th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining, 2018, pp. 974–983.
+
+```xml
+<details>
+<summary>more</summary>
+
+[21] M. G. Karlaftis and E. I. Vlahogianni, “Statistical methods versus neural networks in transportation research: Differences, similarities and some insights,” Transportation Research Part C: Emerging Technolo- gies, vol. 19, no. 3, pp. 387–399, 2011.
+[22] E. I. Vlahogianni, M. G. Karlaftis, and J. C. Golias, “Short-term traffic forecasting: Where we are and where were going,” Transportation Research Part C: Emerging Technologies, vol. 43, pp. 3–19, 2014.
+[23] P. Xie, T. Li, J. Liu, S. Du, X. Yang, and J. Zhang, “Urban flow prediction from spatiotemporal data using machine learning: A survey,” Information Fusion, 2020.
+
+[24] H. Nguyen, L.-M. Kieu, T. Wen, and C. Cai, “Deep learning methods in transportation domain: a review,” IET Intelligent Transport Systems, vol. 12, no. 9, pp. 998–1004, 2018.
+[25] Y. Wang, D. Zhang, Y. Liu, B. Dai, and L. H. Lee, “Enhancing transportation systems via deep learning: A survey,” Transportation research part C: emerging technologies, vol. 99, pp. 144–163, 2019.
+[26] M. Veres and M. Moussa, “Deep learning for intelligent transportation systems: A survey of emerging trends,” IEEE Transactions on Intelli- gent Transportation Systems, 2019.
+[27] Q. Chen, W. Wang, F. Wu, S. De, R. Wang, B. Zhang, and X. Huang,
+“A survey on an emerging area: Deep learning for smart city data,” IEEE Transactions on Emerging Topics in Computational Intelligence, vol. 3, no. 5, pp. 392–410, 2019.
+[28] S. Wang, J. Cao, and P. S. Yu, “Deep learning for spatio-temporal data mining: A survey,” arXiv preprint arXiv:1906.04928, 2019.
+[29] M. M. Bronstein, J. Bruna, Y. LeCun, A. Szlam, and P. Vandergheynst, “Geometric deep learning: going beyond euclidean data,” IEEE Signal Processing Magazine, vol. 34, no. 4, pp. 18–42, 2017.
+[30] J. Zhou, G. Cui, Z. Zhang, C. Yang, Z. Liu, L. Wang, C. Li, and M. Sun, “Graph neural networks: A review of methods and applications,” arXiv preprint arXiv:1812.08434, 2018.
+[31] S. Zhang, H. Tong, J. Xu, and R. Maciejewski, “Graph convolutional networks: a comprehensive review,” Computational Social Networks, vol. 6, no. 1, p. 11, 2019.
+[32] P. Quan, Y. Shi, M. Lei, J. Leng, T. Zhang, and L. Niu, “A brief review of receptive fields in graph convolutional networks,” in IEEE/WIC/ACM International Conference on Web Intelligence-Companion Volume, 2019, pp. 106–110.
+[33] Z. Wu, S. Pan, F. Chen, G. Long, C. Zhang, and S. Y. Philip, “A comprehensive survey on graph neural networks,” IEEE Transactions on Neural Networks and Learning Systems, 2020.
+[34] Y. Chen, Y. Lv, Z. Li, and F. Wang, “Long short-term memory model for traffic congestion prediction with online open data,” in 19th IEEE International Conference on Intelligent Transportation Systems, ITSC 2016, Rio de Janeiro, Brazil, November 1-4, 2016. IEEE, 2016, pp. 132–137. [Online]. Available: https: //doi.org/10.1109/ITSC.2016.7795543
+[35] X. Ma, H. Yu, Y. Wang, and Y. Wang, “Large-scale transportation network congestion evolution prediction using deep learning theory,” PloS one, vol. 10, no. 3, 2015.
+[36] F. Sun, A. Dubey, and J. White, “Dxnatdeep neural networks for ex- plaining non-recurring traffic congestion,” in 2017 IEEE International Conference on Big Data (Big Data). IEEE, 2017, pp. 2141–2150.
+[37] L. Wei, Z. Yu, Z. Jin, L. Xie, J. Huang, D. Cai, X. He, and X.-S. Hua, “Dual graph for traffic forecasting,” IEEE Access, vol. PP, pp. 1–1, 12 2019.
+[38] N. Casas, “Deep deterministic policy gradient for urban traffic light control,” arXiv preprint arXiv:1703.09035, 2017.
+[39] J. Gao, Y. Shen, J. Liu, M. Ito, and N. Shiratori, “Adaptive traffic signal control: Deep reinforcement learning algorithm with experience replay and target network,” CoRR, vol. abs/1705.02755, 2017. [Online]. Available: http://arxiv.org/abs/1705.02755
+[40] F. Rodrigues, I. Markou, and F. C. Pereira, “Combining time-series and textual data for taxi demand prediction in event areas: A deep learning approach,” Information Fusion, vol. 49, pp. 120–129, 2019.
+[41] D. Wang, W. Cao, J. Li, and J. Ye, “Deepsd: Supply-demand prediction for online car-hailing services using deep neural networks,” in 2017 IEEE 33rd international conference on data engineering (ICDE). IEEE, 2017, pp. 243–254.
+[42] D. Chai, L. Wang, and Q. Yang, “Bike flow prediction with multi-graph convolutional networks,” in Proceedings of the 26th ACM SIGSPATIAL International Conference on Advances in Geographic Information Systems, SIGSPATIAL 2018, Seattle, WA, USA, November 06-09, 2018. ACM, 2018, pp. 397–400. [Online]. Available: https://doi.org/10.1145/3274895.3274896
+[43] L. Lin, Z. He, and S. Peeta, “Predicting station-level hourly demand in a large-scale bike-sharing network: A graph convolutional neural network approach,” Transportation Research Part C: Emerging Technologies, vol. 97, pp. 258–276, 2018.
+[44] C. E. Hatri and J. Boumhidi, “Fuzzy deep learning based urban traffic incident detection,” Cogn. Syst. Res., vol. 50, pp. 206–213, 2018. [Online]. Available: https://doi.org/10.1016/j.cogsys.2017.12.002
+[45] Z. Zhang, Q. He, J. Gao, and M. Ni, “A deep learning approach for detecting traffic accidents from social media data,” Transportation research part C: emerging technologies, vol. 86, pp. 580–596, 2018.
+[46] Q. Chen, X. Song, H. Yamada, and R. Shibasaki, “Learning deep representation from big and heterogeneous data for traffic accident
+inference,” in Thirtieth AAAI Conference on Artificial Intelligence, 2016.
+[47] M. I. Sameen and B. Pradhan, “Severity prediction of traffic accidents with recurrent neural networks,” Applied Sciences, vol. 7, no. 6, p. 476, 2017.
+[48] S. Alkheder, M. Taamneh, and S. Taamneh, “Severity prediction of traf- fic accident using an artificial neural network,” Journal ofForecasting, vol. 36, no. 1, pp. 100–108, 2017.
+[49] W. Qiu, H. Chen, and B. An, “Dynamic electronic toll collection via multi-agent deep reinforcement learning with edge-based graph convolutional networks,” in Proceedings of the 28th International Joint Conference on Artificial Intelligence. AAAI Press, 2019, pp. 4568– 4574.
+[50] X. Chen, S. Xiang, C.-L. Liu, and C.-H. Pan, “Vehicle detection in satellite images by hybrid deep convolutional neural networks,” IEEE Geoscience and remote sensing letters, vol. 11, no. 10, pp. 1797–1801, 2014.
+[51] S. Zhang, J. Yang, and B. Schiele, “Occluded pedestrian detection through guided attention in cnns,” in Proceedings of the IEEE Con- ference on Computer Vision and Pattern Recognition, 2018, pp. 6995– 7003.
+[52] H. Tayara, K. G. Soo, and K. T. Chong, “Vehicle detection and counting in high-resolution aerial images using convolutional regression neural network,” IEEE Access, vol. 6, pp. 2220–2230, 2017.
+[53] L.-T. Wu and H.-Y. Lin, “Overtaking vehicle detection techniques based on optical flow and convolutional neural network.” in VEHITS, 2018, pp. 133–140.
+[54] J. Li, X. Liang, S. Shen, T. Xu, J. Feng, and S. Yan, “Scale-aware fast r-cnn for pedestrian detection,” IEEE transactions on Multimedia, vol. 20, no. 4, pp. 985–996, 2017.
+[55] S. Mylavarapu, M. Sandhu, P. Vijayan, K. M. Krishna, B. Ravindran, and A. Namboodiri, “Towards accurate vehicle behaviour classification with multi-relational graph convolutional networks,” CoRR, vol. abs/2002.00786, 2020. [Online]. Available: https://arxiv.org/abs/2002. 00786
+[56] Z. Zhao, H. Fang, Z. Jin, and Q. Qiu, “Gisnet: Graph-based information sharing network for vehicle trajectory prediction,” CoRR, vol. abs/2003.11973, 2020. [Online]. Available: https://arxiv.org/abs/ 2003.11973
+[57] H. Martin, D. Bucher, E. Suel, P. Zhao, F. Perez-Cruz, and M. Raubal, “Graph convolutional neural networks for human activity purpose imputation from gps-based trajectory data,” 2018.
+[58] J. Li, Z. Han, H. Cheng, J. Su, P. Wang, J. Zhang, and L. Pan, “Predicting path failure in time-evolving graphs,” in Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining, KDD 2019, Anchorage, AK, USA, August 4-8, 2019, A. Teredesai, V. Kumar, Y. Li, R. Rosales, E. Terzi, and G. Karypis, Eds. ACM, 2019, pp. 1279–1289. [Online]. Available: https://doi.org/10.1145/3292500.3330847
+[59] T. Nishi, K. Otaki, K. Hayakawa, and T. Yoshimura, “Traffic signal control based on reinforcement learning with graph convolutional neural nets,” in 21st International Conference on Intelligent Transportation Systems, ITSC 2018, Maui, HI, USA, November 4-7, 2018, W. Zhang, A. M. Bayen, J. J. S. Medina, and M. J. Barth, Eds. IEEE, 2018, pp. 877–883. [Online]. Available: https://doi.org/10.1109/ITSC.2018.8569301
+[60] Q. Zhang, Q. Jin, J. Chang, S. Xiang, and C. Pan, “Kernel- weighted graph convolutional network: A deep learning approach for traffic forecasting,” in 24th International Conference on Pattern Recognition, ICPR 2018, Beijing, China, August 20-24, 2018. IEEE Computer Society, 2018, pp. 1018–1023. [Online]. Available: https://doi.org/10.1109/ICPR.2018.8545106
+[61] S. Guo, Y. Lin, N. Feng, C. Song, and H. Wan, “Attention based spatial-temporal graph convolutional networks for traffic flow forecasting,” in The Thirty-Third AAAI Conference on Artificial Intelligence, AAAI 2019, The Thirty-First Innovative Applications of Artificial Intelligence Conference, IAAI 2019, The Ninth AAAI Symposium on Educational Advances in Artificial Intelligence, EAAI 2019, Honolulu, Hawaii, USA, January 27 - February 1, 2019. AAAI Press, 2019, pp. 922–929. [Online]. Available: https://doi.org/10.1609/aaai.v33i01.3301922
+[62] L. Ge, H. Li, J. Liu, and A. Zhou, “Temporal graph convolutional networks for traffic speed prediction considering external factors,” in 20th IEEE International Conference on Mobile Data Management, MDM 2019, Hong Kong, SAR, China, June 10-13, 2019. IEEE, 2019, pp. 234–242. [Online]. Available: https://doi.org/10.1109/MDM. 2019.00-52
+[63] B. Yu, M. Li, J. Zhang, and Z. Zhu, “3d graph convolutional networks with temporal graphs: A spatial information free framework for traffic forecasting,” CoRR, vol. abs/1903.00919, 2019. [Online]. Available: http://arxiv.org/abs/1903.00919
+[64] J. Hu, C. Guo, B. Yang, and C. S. Jensen, “Stochastic weight completion for road networks using graph convolutional networks,” in 35th IEEE International Conference on Data Engineering, ICDE 2019, Macao, China, April 8-11, 2019. IEEE, 2019, pp. 1274–1285. [Online]. Available: https://doi.org/10.1109/ICDE.2019.00116
+[65] D. Wang, J. Zhang, W. Cao, J. Li, and Y. Zheng, “When will you arrive? estimating travel time based on deep neural networks,” in Thirty-Second AAAI Conference on Artificial Intelligence, 2018.
+[66] X. Geng, X. Wu, L. Zhang, Q. Yang, Y. Liu, and J. Ye, “Multi- modal graph interaction for multi-graph convolution network in urban spatiotemporal forecasting,” CoRR, vol. abs/1905.11395, 2019. [Online]. Available: http://arxiv.org/abs/1905.11395
+[67] L. Bai, L. Yao, S. S. Kanhere, X. Wang, and Q. Z. Sheng, “Stg2seq: Spatial-temporal graph to sequence model for multi-step passenger demand forecasting,” in Proceedings ofthe Twenty-Eighth International Joint Conference on Artificial Intelligence, IJCAI 2019, Macao, China, August 10-16, 2019, S. Kraus, Ed. ijcai.org, 2019, pp. 1981–1987. [Online]. Available: https://doi.org/10.24963/ijcai.2019/274
+[68] J. Chen, L. Liu, H. Wu, J. Zhen, G. Li, and L. Lin, “Physical- virtual collaboration graph network for station-level metro ridership prediction,” CoRR, vol. abs/2001.04889, 2020. [Online]. Available: https://arxiv.org/abs/2001.04889
+[69] Z. Li, N. D. Sergin, H. Yan, C. Zhang, and F. Tsung, “Tensor completion for weakly-dependent data on graph for metro passenger flow prediction,” CoRR, vol. abs/1912.05693, 2019. [Online]. Available: http://arxiv.org/abs/1912.05693
+[70] L. Zhao, Y. Song, C. Zhang, Y. Liu, P. Wang, T. Lin, M. Deng, and H. Li, “T-gcn: A temporal graph convolutional network for traffic prediction,” IEEE Transactions on Intelligent Transportation Systems, vol. PP, pp. 1–11, 08 2019.
+[71] M. Lu, K. Zhang, H. Liu, and N. Xiong, “Graph hierarchical convolutional recurrent neural network (GHCRNN) for vehicle condition prediction,” CoRR, vol. abs/1903.06261, 2019. [Online]. Available: http://arxiv.org/abs/1903.06261
+[72] X. Zhou, Y. Shen, and L. Huang, “Revisiting flow information for traffic prediction,” CoRR, vol. abs/1906.00560, 2019. [Online]. Available: http://arxiv.org/abs/1906.00560
+[73] Y. Wang, H. Yin, H. Chen, T. Wo, J. Xu, and K. Zheng, “Origin-destination matrix prediction via graph convolution: a new perspective of passenger demand modeling,” in Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining, KDD 2019, Anchorage, AK, USA, August 4-8, 2019, A. Teredesai, V. Kumar, Y. Li, R. Rosales, E. Terzi, and G. Karypis, Eds. ACM, 2019, pp. 1227–1235. [Online]. Available: https://doi.org/10.1145/3292500.3330877
+[74] B. Yu, H. Yin, and Z. Zhu, “Spatio-temporal graph convolutional networks: A deep learning framework for traffic forecasting,” in Proceedings of the Twenty-Seventh International Joint Conference on Artificial Intelligence, IJCAI 2018, July 13-19, 2018, Stockholm, Sweden, J. Lang, Ed. ijcai.org, 2018, pp. 3634–3640. [Online]. Available: https://doi.org/10.24963/ijcai.2018/505
+[75] Z. Cui, K. Henrickson, R. Ke, and Y. Wang, “Traffic graph con- volutional recurrent neural network: A deep learning framework for network-scale traffic learning and forecasting,” IEEE Transactions on Intelligent Transportation Systems, vol. PP, 11 2019.
+[76] J. J. Q. Yu and J. Gu, “Real-time traffic speed estimation with graph convolutional generative autoencoder,” IEEE Trans. Intell. Transp. Syst., vol. 20, no. 10, pp. 3940–3951, 2019. [Online]. Available: https://doi.org/10.1109/TITS.2019.2910560
+[77] Y. Huang, Y. Weng, S. Yu, and X. Chen, “Diffusion convolutional recurrent neural network with rank influence learning for traffic forecasting,” in 18th IEEE International Conference On Trust, Security And Privacy In Computing And Communications / 13th IEEE International Conference On Big Data Science And Engineering, TrustCom/BigDataSE 2019, Rotorua, New Zealand, August 5-8, 2019. IEEE, 2019, pp. 678–685. [Online]. Available: https: //doi.org/10.1109/TrustCom/BigDataSE.2019.00096
+[78] J. Li, H. Peng, L. Liu, G. Xiong, B. Du, H. Ma, L. Wang, and M. Z. A. Bhuiyan, “Graph cnns for urban traffic passenger flows prediction,” in 2018 IEEE SmartWorld, Ubiquitous Intelligence & Computing, Advanced & Trusted Computing, Scalable Computing & Communications, Cloud & Big Data Computing, Internet of People and Smart City Innovation, SmartWorld/SCALCOM/UIC/ATC/CBDCom/IOP/SCI 2018, Guangzhou, China, October 8-12, 2018, G. Wang, Q. Han, M. Z. A. Bhuiyan, X. Ma, F. Loulergue, P. Li, M. Roveri, and L. Chen, Eds. IEEE, 2018, pp. 29–36. [Online]. Available: https://doi.org/10.1109/SmartWorld.2018.00041
+[79] C. Zheng, X. Fan, C. Wang, and J. Qi, “GMAN: A graph multi- attention network for traffic prediction,” CoRR, vol. abs/1911.08415, 2019. [Online]. Available: http://arxiv.org/abs/1911.08415
+[80] W. Qiu, H. Chen, and B. An, “Dynamic electronic toll collection via multi-agent deep reinforcement learning with edge-based graph convolutional networks,” in Proceedings of the Twenty-Eighth International Joint Conference on Artificial Intelligence, IJCAI 2019, Macao, China, August 10-16, 2019, S. Kraus, Ed. ijcai.org, 2019, pp. 4568–4574. [Online]. Available: https://doi.org/10.24963/ijcai.2019/ 635
+[81] Y. Zhang, S. Wang, B. Chen, and J. Cao, “GCGAN: generative adversarial nets with graph CNN for network-scale traffic prediction,” in International Joint Conference on Neural Networks, IJCNN 2019 Budapest, Hungary, July 14-19, 2019. IEEE, 2019, pp. 1–8. [Online]. Available: https://doi.org/10.1109/IJCNN.2019.8852211
+[82] Z. Wu, S. Pan, G. Long, J. Jiang, and C. Zhang, “Graph wavenet for deep spatial-temporal graph modeling,” in Proceedings of the Twenty-Eighth International Joint Conference on Artificial Intelligence, IJCAI 2019, Macao, China, August 10-16, 2019, S. Kraus, Ed. ijcai.org, 2019, pp. 1907–1913. [Online]. Available: https://doi.org/10.24963/ijcai.2019/264
+[83] J. Ke, X. Qin, H. Yang, Z. Zheng, Z. Zhu, and J. Ye, “Predicting origin-destination ride-sourcing demand with a spatio-temporal encoder-decoder residual multi-graph convolutional network,” CoRR, vol. abs/1910.09103, 2019. [Online]. Available: http://arxiv.org/abs/ 1910.09103
+[84] Z. Kang, H. Xu, J. Hu, and X. Pei, “Learning dynamic graph embed- ding for traffic flow forecasting: A graph self-attentive method,” 10 2019, pp. 2570–2576.
+[85] B. Yu, H. Yin, and Z. Zhu, “St-unet: A spatio-temporal u-network for graph-structured time series modeling,” CoRR, vol. abs/1903.05631, 2019. [Online]. Available: http://arxiv.org/abs/1903.05631
+[86] K. Guo, Y. Hu, Z. Qian, H. Liu, K. Zhang, Y. Sun, J. Gao, and B. Yin, “Optimized graph convolution recurrent neural network for traffic prediction,” IEEE Transactions on Intelligent Transportation Systems, vol. PP, pp. 1–12, 01 2020.
+[87] Q. Xie, T. Guo, Y. Chen, Y. Xiao, X. Wang, and B. Y. Zhao, “How do urban incidents affect traffic speed? A deep graph convolutional network for incident-driven traffic speed prediction,” CoRR, vol. abs/1912.01242, 2019. [Online]. Available: http://arxiv.org/abs/1912. 01242
+[88] C. Zhang, J. J. Q. Yu, and Y. Liu, “Spatial-temporal graph attention networks: A deep learning approach for traffic forecasting,” IEEE Access, vol. 7, pp. 166 246–166 256, 2019. [Online]. Available: https://doi.org/10.1109/ACCESS.2019.2953888
+[89] Y. Li, R. Yu, C. Shahabi, and Y. Liu, “Diffusion convolutional recurrent neural network: Data-driven traffic forecasting,” in 6th International Conference on Learning Representations, ICLR 2018, Vancouver, BC, Canada, April 30 - May 3, 2018, Conference Track Proceedings. OpenReview.net, 2018. [Online]. Available: https://openreview.net/forum?id=SJiHXGWAZ
+[90] Z. Zhang, M. Li, X. Lin, Y. Wang, and F. He, “Multistep speed prediction on traffic networks: A deep learning approach considering spatio-temporal dependencies,” Transportation research part C: emerg- ing technologies, vol. 105, pp. 297–322, 2019.
+[91] C. Chen, K. Li, S. G. Teo, X. Zou, K. Wang, J. Wang, and Z. Zeng, “Gated residual recurrent graph neural networks for traffic prediction,” in The Thirty-Third AAAI Conference on Artificial Intelligence, AAAI 2019, The Thirty-First Innovative Applications of Artificial Intelligence Conference, IAAI 2019, The Ninth AAAI Symposium on Educational Advances in Artificial Intelligence, EAAI 2019, Honolulu, Hawaii, USA, January 27 - February 1, 2019. AAAI Press, 2019, pp. 485–492. [Online]. Available: https://doi.org/10.1609/aaai.v33i01.3301485
+[92] L. Bai, L. Yao, S. S. Kanhere, X. Wang, W. Liu, and Z. Yang, “Spatio-temporal graph convolutional and recurrent networks for citywide passenger demand prediction,” in Proceedings of the 28th ACM International Conference on Information and Knowledge Management, CIKM 2019, Beijing, China, November 3-7, 2019, W. Zhu, D. Tao, X. Cheng, P. Cui, E. A. Rundensteiner, D. Carmel, Q. He, and J. X. Yu, Eds. ACM, 2019, pp. 2293–2296. [Online]. Available: https://doi.org/10.1145/3357384.3358097
+
+</details>
+```
+
+
+
+
