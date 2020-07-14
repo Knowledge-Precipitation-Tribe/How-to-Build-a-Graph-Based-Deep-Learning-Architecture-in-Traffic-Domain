@@ -12,6 +12,8 @@ Paper：[How to Build a Graph-Based Deep Learning Architecture in Traffic Domain
 
 # Mind map
 
+![mindmap](./img/HowToBuildGraph.jpg)
+
 # [Content](#content)
 
 - <a href = "#Abstract">Abstract</a>
